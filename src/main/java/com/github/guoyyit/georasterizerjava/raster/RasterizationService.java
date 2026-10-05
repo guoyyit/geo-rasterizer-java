@@ -183,7 +183,11 @@ public final class RasterizationService {
                 candidates.add(feature);
             }
         });
-        candidates.sort(java.util.Comparator.comparingLong(SpooledFeature::sequence));
+        // Merge order is the feature id, never the submission order, so
+        // permuting the input set cannot change values or owners.
+        candidates.sort(java.util.Comparator
+                .comparingLong((SpooledFeature f) -> f.feature().id())
+                .thenComparingLong(SpooledFeature::sequence));
 
         CoverageMerger merger = new CoverageMerger(config.mergeSemantics(), tile);
 
@@ -246,7 +250,9 @@ public final class RasterizationService {
             }
         }
         pending.clear();
-        ready.sort((a, b) -> Long.compare(a.sequence(), b.sequence()));
+        ready.sort(java.util.Comparator
+                .comparingLong(RasterizedFeature::featureId)
+                .thenComparingLong(RasterizedFeature::sequence));
         return ready;
     }
 

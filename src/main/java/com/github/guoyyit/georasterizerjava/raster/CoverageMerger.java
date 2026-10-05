@@ -6,8 +6,18 @@ import java.util.BitSet;
 
 /**
  * Merges per-feature covered-cell sets into one tile's coverage arrays.
- * Features must be merged in ascending feature-id order; the result is
- * then independent of the order in which features were produced.
+ * The tie-breaking rules below are explicit, so the result does not
+ * depend on the order in which features are merged:
+ * <ul>
+ *   <li>{@code COUNT} – value is the number of covering features and
+ *       the owner is the smallest covering feature id;</li>
+ *   <li>{@code MAX} – the largest weight wins and equal weights are
+ *       broken by the smaller feature id;</li>
+ *   <li>{@code PRIORITY} – the largest priority wins and equal
+ *       priorities are broken by the smaller feature id.</li>
+ * </ul>
+ * Uncovered cells keep owner {@code -1}. Features are nevertheless fed
+ * in ascending feature-id order by the service.
  */
 public final class CoverageMerger {
 
@@ -45,9 +55,15 @@ public final class CoverageMerger {
                         : semantics == MergeSemantics.MAX ? weight : priority;
             } else {
                 switch (semantics) {
-                    case COUNT -> values[local] += 1.0;
+                    case COUNT -> {
+                        values[local] += 1.0;
+                        if (featureId < owners[local]) {
+                            owners[local] = featureId;
+                        }
+                    }
                     case MAX -> {
-                        if (weight > values[local]) {
+                        if (weight > values[local]
+                                || (weight == values[local] && featureId < owners[local])) {
                             values[local] = weight;
                             owners[local] = featureId;
                         }
