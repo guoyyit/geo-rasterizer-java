@@ -42,14 +42,16 @@ class PolygonAreaTest {
     }
 
     @Test
-    void selfIntersectingBowtieDiffersByFillRule() {
+    void selfIntersectingBowtieAreaIsGeometricTruth() {
         // Bowtie (hourglass): two 2x2 triangles touching at the origin.
         Ring bowtie = Geometries.ring(-2, -2, 2, 2, 2, -2, -2, 2);
         Polygon polygon = Geometries.polygon(bowtie);
-        // Each triangle has area 8 (base 4, height 4); under both rules
-        // the two lobes are interior (they only meet at a point).
-        assertEquals(16.0, PolygonArea.theoreticalArea(polygon, FillRule.EVEN_ODD), EPS);
-        assertEquals(16.0, PolygonArea.theoreticalArea(polygon, FillRule.NON_ZERO), EPS);
+        // Two lobes of base 4 and height 2 (4*2/2 = 4 each); under both
+        // rules the two lobes are interior (they only meet at a point),
+        // so the planar region measure is 8, not the signed-shoelace 0
+        // and not the sum-of-winding-triangles 16.
+        assertEquals(8.0, PolygonArea.theoreticalArea(polygon, FillRule.EVEN_ODD), EPS);
+        assertEquals(8.0, PolygonArea.theoreticalArea(polygon, FillRule.NON_ZERO), EPS);
     }
 
     @Test

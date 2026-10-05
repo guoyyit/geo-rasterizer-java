@@ -4,8 +4,11 @@ import java.util.BitSet;
 
 /**
  * Final raster coverage: one aggregated value per cell plus the id of the
- * feature owning the cell for MAX/PRIORITY semantics ({@code -1} otherwise).
- * Row 0 is the bottom row; columns increase with x.
+ * feature owning the cell. Owner rules: COUNT uses the smallest id of any
+ * covering feature; MAX uses the largest-weight feature (ties: smaller id);
+ * PRIORITY uses the highest-priority feature (ties: smaller id). Uncovered
+ * cells have owner {@code -1}. Row 0 is the bottom row; columns increase
+ * with x.
  */
 public final class CoverageMap {
 

@@ -29,10 +29,23 @@ public final class PolygonArea {
             return 0.0;
         }
 
+        // Bands are split at every y where the interior topology changes:
+        // edge endpoints and, for self-intersecting rings, proper edge
+        // crossings lying in the interiors of both edges. Sampling each
+        // band at its midpoint is then exact.
         List<Double> levels = new ArrayList<>(edges.size() * 2);
         for (Edge edge : edges) {
             levels.add(edge.yLow);
             levels.add(edge.yHigh);
+            for (Edge other : edges) {
+                if (other == edge) {
+                    continue;
+                }
+                double crossingY = properIntersectionY(edge, other);
+                if (!Double.isNaN(crossingY)) {
+                    levels.add(crossingY);
+                }
+            }
         }
         levels.sort(Comparator.naturalOrder());
 
@@ -49,6 +62,31 @@ public final class PolygonArea {
             area += measure * (y1 - y0);
         }
         return Math.abs(area);
+    }
+
+    /**
+     * Y coordinate of a proper intersection between two non-horizontal
+     * edges, i.e. one strictly inside both edge y-ranges. Vertex touches
+     * are already band boundaries; collinear overlaps never change the
+     * topology and are skipped. Returns NaN when there is no crossing.
+     */
+    private static double properIntersectionY(Edge a, Edge b) {
+        double rx = a.xHigh - a.xLow;
+        double ry = a.yHigh - a.yLow;
+        double sx = b.xHigh - b.xLow;
+        double sy = b.yHigh - b.yLow;
+        double denominator = rx * sy - ry * sx;
+        if (denominator == 0.0) {
+            return Double.NaN;
+        }
+        double qpx = b.xLow - a.xLow;
+        double qpy = b.yLow - a.yLow;
+        double t = (qpx * sy - qpy * sx) / denominator;
+        double u = (qpx * ry - qpy * rx) / denominator;
+        if (t <= 0.0 || t >= 1.0 || u <= 0.0 || u >= 1.0) {
+            return Double.NaN;
+        }
+        return a.yLow + t * ry;
     }
 
     private static void collectEdges(Ring ring, List<Edge> out) {
